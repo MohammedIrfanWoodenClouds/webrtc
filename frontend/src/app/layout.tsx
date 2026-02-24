@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Providers } from "./Providers";
+import { ThemeProvider } from "@/context/ThemeContext";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "SkySync",
-  description: "WebRTC Video and Chat platform",
+  title: "Aether | Premium WebRTC Meetings",
+  description: "High quality video calling, chat, and screen sharing platform.",
 };
 
 export default function RootLayout({
@@ -16,11 +16,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.className} bg-neutral-950 text-neutral-50`}>
-        <Providers>
+    <html lang="en" data-theme="dark">
+      <body className={inter.variable}>
+        <ThemeProvider>
           {children}
-        </Providers>
+        </ThemeProvider>
       </body>
     </html>
   );
