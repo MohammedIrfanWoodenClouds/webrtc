@@ -6,8 +6,8 @@ import { ThemeProvider } from "@/context/ThemeContext";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "Aether | Premium WebRTC Meetings",
-  description: "High quality video calling, chat, and screen sharing platform.",
+  title: "SkySync",
+  description: "Next-Gen Communication. Connect instantly, sync seamlessly.",
 };
 
 export default function RootLayout({
