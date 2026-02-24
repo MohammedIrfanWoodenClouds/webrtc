@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Mic, MicOff, Video as VideoIcon, VideoOff, MonitorUp, PhoneOff, MessageSquare, Send, Link, Check, Moon, Sun, Hand, SmilePlus } from "lucide-react";
+import { Mic, MicOff, Video as VideoIcon, VideoOff, MonitorUp, PhoneOff, MessageSquare, Send, Link, Check, Moon, Sun, Hand, SmilePlus, Info, Users, Copy, Sparkles } from "lucide-react";
 import styles from "./page.module.css";
 import { useWebRTC } from "@/hooks/useWebRTC";
 import VideoPlayer from "@/components/VideoPlayer";
@@ -20,6 +20,7 @@ export default function Room() {
     const [needsName, setNeedsName] = useState(false);
 
     const [isChatOpen, setIsChatOpen] = useState(false);
+    const [isInfoOpen, setIsInfoOpen] = useState(false);
     const [chatInput, setChatInput] = useState("");
     const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -79,7 +80,7 @@ export default function Room() {
                             onChange={e => setNamePrompt(e.target.value)}
                             autoFocus
                         />
-                        <button type="submit" className={`btn btn-primary`} style={{ marginTop: 24, width: '100%' }} disabled={!namePrompt.trim()}>
+                        <button type="submit" className={`btn btn-primary`} style={{ marginTop: 24, width: '100%', borderRadius: 10 }}>
                             Join Meeting
                         </button>
                     </form>
@@ -153,16 +154,34 @@ export default function Room() {
         ));
     };
 
+    // Dynamic grid layout class based on number of participants
+    const participantCount = peers.length + 1;
+    let gridClass = styles.grid1;
+    if (participantCount === 2) gridClass = styles.grid2;
+    else if (participantCount === 3 || participantCount === 4) gridClass = styles.grid3_4;
+    else if (participantCount > 4) gridClass = styles.gridMore;
+
+    const toggleChat = () => {
+        if (!isChatOpen) setIsInfoOpen(false);
+        setIsChatOpen(!isChatOpen);
+    };
+
+    const toggleInfo = () => {
+        if (!isInfoOpen) setIsChatOpen(false);
+        setIsInfoOpen(!isInfoOpen);
+    };
+
     return (
         <div className={styles.container}>
             {/* Waiting Room */}
             {isWaiting && !isJoined && (
                 <div className={styles.waitingOverlay}>
                     <div className={styles.waitingCard}>
+                        <div className={styles.ambientGlowWaiting}></div>
                         <div className={styles.waitingSpinner}></div>
                         <h2>Asking to join...</h2>
                         <p>You will join the meeting when the host lets you in.</p>
-                        <button className="btn btn-secondary" onClick={handleLeave} style={{ marginTop: 24 }}>
+                        <button className={styles.pillBtnSecondary} onClick={handleLeave} style={{ marginTop: 24 }}>
                             Leave
                         </button>
                     </div>
@@ -193,43 +212,45 @@ export default function Room() {
                 ))}
             </div>
 
-            {/* Header */}
-            <header className={styles.header}>
-                <div className={styles.logoInfo}>
-                    <div className={styles.logoCircles} style={{ position: 'relative', width: 28, height: 28, marginRight: 8 }}>
-                        <div style={{ position: 'absolute', width: 20, height: 20, borderRadius: '50%', background: '#3b82f6', top: 0, right: 0 }}></div>
-                        <div style={{ position: 'absolute', width: 20, height: 20, borderRadius: '50%', background: '#8b5cf6', bottom: 0, left: 0, mixBlendMode: 'screen' }}></div>
-                    </div>
-                    <h2>SkySync</h2>
+            {/* Subtle Top-Left Info (Time, Name placeholder, Logo) */}
+            <div className={styles.topLeftOverlay}>
+                <div className={styles.meetingLogoWrap}>
+                    <Sparkles size={18} className={styles.meetingLogoIcon} />
+                    <span className={styles.meetingLogoText}>SkySync</span>
                 </div>
-
-                <div className={styles.headerActions}>
-                    <button className={styles.roomBadge} onClick={handleCopyLink} title="Copy Meeting Link">
-                        {linkCopied ? <Check size={14} /> : <Link size={14} />}
-                        {linkCopied ? "Copied Link!" : `Room ID: ${id}`}
-                    </button>
-                    <button className={styles.themeToggleNav} onClick={toggleTheme}>
-                        {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-                    </button>
+                <div className={styles.timeDisplay}>
+                    {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
-            </header>
+                <div className={styles.roomBadgeMini}>
+                    {id}
+                </div>
+            </div>
 
-            {/* Main Content */}
+            {/* Main Content Area */}
             <div className={styles.mainContent}>
                 {error && (
                     <div className={styles.errorBanner}>{error}</div>
                 )}
 
-                <div className={`${styles.videoGridContainer} ${isChatOpen ? styles.shrink : ""}`}>
-                    <div className={styles.videoGrid}>
+                <div className={`${styles.videoGridContainer} ${(isChatOpen || isInfoOpen) ? styles.shrink : ""}`}>
+                    <div className={`${styles.videoGrid} ${gridClass}`}>
                         {/* Local Video */}
                         <div className={styles.videoContainerWrapper}>
                             <VideoPlayer
                                 stream={isVideoOff ? null : localStream}
-                                userName={userName}
+                                userName="You"
                                 isLocal={true}
                                 isMuted={isMuted}
                             />
+                            {isVideoOff && (
+                                <div className={styles.avatarPlaceholder}>
+                                    {userName.charAt(0).toUpperCase()}
+                                </div>
+                            )}
+                            <div className={styles.videoOverlayLabel}>
+                                {isMuted ? <MicOff size={16} className={styles.mutedIconLabel} /> : null}
+                                You {isHost && "(Host)"}
+                            </div>
                             {isHandRaised && <div className={styles.handIndicator}><Hand size={20} color="#eab308" /></div>}
                             {renderReactions('local')}
                         </div>
@@ -242,6 +263,9 @@ export default function Room() {
                                     userName={peer.userName}
                                     isLocal={false}
                                 />
+                                <div className={styles.videoOverlayLabel}>
+                                    {peer.userName}
+                                </div>
                                 {raisedHands.includes(peer.socketId) && <div className={styles.handIndicator}><Hand size={20} color="#eab308" /></div>}
                                 {renderReactions(peer.socketId)}
                             </div>
@@ -249,91 +273,146 @@ export default function Room() {
                     </div>
                 </div>
 
-                {/* Chat Sidebar Area */}
-                <div className={`${styles.chatSidebar} ${isChatOpen ? styles.open : ""}`}>
-                    <div className={styles.chatHeader}>
-                        <h3>In-Call Messages</h3>
-                        <button className="btn-icon" style={{ width: 32, height: 32 }} onClick={() => setIsChatOpen(false)}>
-                            &times;
-                        </button>
-                    </div>
-                    <div className={styles.chatMessages}>
-                        <div className={styles.systemMessage}>Secure, peer-to-peer chat started.</div>
-                        {messages.map((msg) => {
-                            const isMine = msg.senderName === userName;
-                            return (
-                                <div key={msg.id} className={`${styles.chatBubbleWrapper} ${isMine ? styles.chatBubbleWrapperSelf : ""}`}>
-                                    {!isMine && <div className={styles.chatSender}>{msg.senderName}</div>}
-                                    <div className={`${styles.chatBubble} ${isMine ? styles.chatBubbleSelf : styles.chatBubbleOther}`}>
-                                        <div className={styles.chatText}>{msg.message}</div>
-                                        <div className={styles.chatTime}>
-                                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {/* Unified Sidebar Area for Chat or Info */}
+                <div className={`${styles.sidePanel} ${(isChatOpen || isInfoOpen) ? styles.open : ""}`}>
+                    {/* Chat Panel Content */}
+                    {isChatOpen && (
+                        <>
+                            <div className={styles.sideHeader}>
+                                <h3>Meeting Chat</h3>
+                                <button className="btn-icon" style={{ width: 32, height: 32, background: 'transparent' }} onClick={() => setIsChatOpen(false)}>
+                                    &times;
+                                </button>
+                            </div>
+                            <div className={styles.chatMessages}>
+                                <div className={styles.systemMessage}>Messages sent during this meeting are secure.</div>
+                                {messages.map((msg) => {
+                                    const isMine = msg.senderName === userName;
+                                    return (
+                                        <div key={msg.id} className={`${styles.chatBubbleWrapper} ${isMine ? styles.chatBubbleWrapperSelf : ""}`}>
+                                            {!isMine && <div className={styles.chatSender}>{msg.senderName}</div>}
+                                            <div className={`${styles.chatBubble} ${isMine ? styles.chatBubbleSelf : styles.chatBubbleOther}`}>
+                                                <div className={styles.chatText}>{msg.message}</div>
+                                                <div className={styles.chatTime}>
+                                                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                            </div>
                                         </div>
+                                    );
+                                })}
+                                <div ref={chatEndRef} />
+                            </div>
+                            <form className={styles.chatInputArea} onSubmit={handleSendMessage}>
+                                <div className={styles.inputWrapper}>
+                                    <input
+                                        type="text"
+                                        placeholder="Send a message"
+                                        className={styles.chatInputNeo}
+                                        value={chatInput}
+                                        onChange={(e) => setChatInput(e.target.value)}
+                                    />
+                                    <button type="submit" className={styles.sendNeoBtn} disabled={!chatInput.trim()}>
+                                        <Send size={18} />
+                                    </button>
+                                </div>
+                            </form>
+                        </>
+                    )}
+
+                    {/* Info Panel Content */}
+                    {isInfoOpen && (
+                        <>
+                            <div className={styles.sideHeader}>
+                                <h3>Meeting Details</h3>
+                                <button className="btn-icon" style={{ width: 32, height: 32, background: 'transparent' }} onClick={() => setIsInfoOpen(false)}>
+                                    &times;
+                                </button>
+                            </div>
+                            <div className={styles.infoContent}>
+                                <div className={styles.infoSection}>
+                                    <h4>Joining Info</h4>
+                                    <p className={styles.infoDesc}>Share this link with others so they can join.</p>
+                                    <div className={styles.copyBox}>
+                                        <div className={styles.linkText}>{`${window.location.origin}/room/${id}`}</div>
+                                        <button className={styles.copyLinkBtn} onClick={handleCopyLink}>
+                                            {linkCopied ? <Check size={18} /> : <Copy size={18} />} Copy join info
+                                        </button>
                                     </div>
                                 </div>
-                            );
-                        })}
-                        <div ref={chatEndRef} />
-                    </div>
-                    <form className={styles.chatInputArea} onSubmit={handleSendMessage}>
-                        <input
-                            type="text"
-                            placeholder="Type a message..."
-                            className={styles.chatInputNeo}
-                            value={chatInput}
-                            onChange={(e) => setChatInput(e.target.value)}
-                        />
-                        <button type="submit" className={styles.sendNeoBtn}>
-                            <Send size={18} />
-                        </button>
-                    </form>
+
+                                <div className={styles.infoSection}>
+                                    <h4>Participants ({participantCount})</h4>
+                                    <div className={styles.participantList}>
+                                        <div className={styles.participantRow}>
+                                            <div className={styles.userProfileIconSmall}>{userName.charAt(0).toUpperCase()}</div>
+                                            <span>{userName} (You) {isHost && <span className={styles.hostBadgeSubtle}>Host</span>}</span>
+                                        </div>
+                                        {peers.map(p => (
+                                            <div key={p.socketId} className={styles.participantRow}>
+                                                <div className={styles.userProfileIconSmall}>{p.userName.charAt(0).toUpperCase()}</div>
+                                                <span>{p.userName}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
 
-            {/* Controls Bar */}
-            <footer className={styles.controlsBar}>
-                <div className={styles.controlsGroup}>
-                    {/* User profile left section */}
-                    {isHost && <span className={styles.hostBadgeNeo}>Host</span>}
-                    <div className={styles.userProfileIcon}>{userName.charAt(0).toUpperCase()}</div>
-                    <span className={styles.userNameNeo}>{userName}</span>
+            {/* Bottom Google Meet-style Controls Bar */}
+            <footer className={styles.bottomControlsBar}>
+                <div className={styles.controlsGroupLeft}>
+                    {/* Left side info space */}
+                    <div className={styles.bottomTime}>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                    <div className={styles.separator}>|</div>
+                    <div className={styles.bottomRoomId}>{id}</div>
                 </div>
 
                 <div className={styles.centerControls}>
                     <button
-                        className={`btn-icon ${isMuted ? "inactive" : ""}`}
+                        className={`${styles.controlBtn} ${isMuted ? styles.controlBtnDanger : ""}`}
                         onClick={handleToggleMute}
-                        title={isMuted ? "Unmute" : "Mute"}
+                        title={isMuted ? "Turn on microphone" : "Turn off microphone"}
                     >
                         {isMuted ? <MicOff size={22} /> : <Mic size={22} />}
                     </button>
 
                     <button
-                        className={`btn-icon ${isVideoOff ? "inactive" : ""}`}
+                        className={`${styles.controlBtn} ${isVideoOff ? styles.controlBtnDanger : ""}`}
                         onClick={handleToggleVideo}
-                        title={isVideoOff ? "Start Camera" : "Stop Camera"}
+                        title={isVideoOff ? "Turn on camera" : "Turn off camera"}
                     >
                         {isVideoOff ? <VideoOff size={22} /> : <VideoIcon size={22} />}
                     </button>
 
                     <button
-                        className={`btn-icon ${isScreenSharing ? "active" : ""}`}
+                        className={`${styles.controlBtn} ${isScreenSharing ? styles.controlBtnActive : ""}`}
                         onClick={handleToggleScreen}
-                        title="Share Screen"
+                        title="Present now"
                     >
                         <MonitorUp size={22} />
                     </button>
 
+                    <button
+                        className={`${styles.controlBtn} ${isHandRaised ? styles.controlBtnActive : ""}`}
+                        onClick={handleToggleHand}
+                        title={isHandRaised ? "Lower hand" : "Raise hand"}
+                    >
+                        <Hand size={22} />
+                    </button>
+
                     <div className={styles.reactionWrapper}>
                         <button
-                            className={`btn-icon`}
+                            className={`${styles.controlBtn}`}
                             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                            title="React"
+                            title="Send a reaction"
                         >
                             <SmilePlus size={22} />
                         </button>
                         {showEmojiPicker && (
-                            <div className={styles.emojiPicker}>
+                            <div className={styles.emojiPickerPopup}>
                                 {EMOJIS.map(e => (
                                     <button key={e} onClick={() => handleSendReaction(e)} className={styles.emojiBtn}>{e}</button>
                                 ))}
@@ -341,26 +420,35 @@ export default function Room() {
                         )}
                     </div>
 
-                    <button
-                        className={`btn-icon ${isHandRaised ? "activeWarning" : ""}`}
-                        onClick={handleToggleHand}
-                        title="Raise Hand"
-                    >
-                        <Hand size={22} />
-                    </button>
-
-                    <button className={styles.leaveBtnNeo} onClick={handleLeave} title="Leave Meeting">
-                        <PhoneOff size={22} />
+                    <button className={styles.leavePillBtn} onClick={handleLeave} title="Leave call">
+                        <PhoneOff size={24} />
                     </button>
                 </div>
 
-                <div className={styles.controlsGroup} style={{ justifyContent: 'flex-end' }}>
+                <div className={styles.controlsGroupRight}>
                     <button
-                        className={`btn-icon ${isChatOpen ? "active" : ""}`}
-                        onClick={() => setIsChatOpen(!isChatOpen)}
-                        title="Chat"
+                        className={`${styles.rightToolBtn} ${isInfoOpen ? styles.toolBtnActive : ""}`}
+                        onClick={toggleInfo}
+                        title="Meeting details"
                     >
-                        <MessageSquare size={22} />
+                        <Info size={20} />
+                    </button>
+                    <button
+                        className={`${styles.rightToolBtn}`}
+                        title="Show everyone"
+                    >
+                        <Users size={20} />
+                        <span className={styles.badgeCount}>{participantCount}</span>
+                    </button>
+                    <button
+                        className={`${styles.rightToolBtn} ${isChatOpen ? styles.toolBtnActive : ""}`}
+                        onClick={toggleChat}
+                        title="Chat with everyone"
+                    >
+                        <MessageSquare size={20} />
+                    </button>
+                    <button className={styles.themeToggleNav} onClick={toggleTheme} title="Toggle Theme">
+                        {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
                     </button>
                 </div>
             </footer>

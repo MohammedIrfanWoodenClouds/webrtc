@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Video, Sparkles, ArrowRight, Copy, Share2, PlayCircle, Shield, Zap, MonitorUp, Sun, Moon } from "lucide-react";
+import { Video, Sparkles, ArrowRight, Copy, Share2, Sun, Moon, Keyboard } from "lucide-react";
 import styles from "./page.module.css";
 import { useTheme } from "@/context/ThemeContext";
 
@@ -17,9 +17,22 @@ export default function Home() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [createdRoomId, setCreatedRoomId] = useState("");
 
+  const [currentTime, setCurrentTime] = useState("");
+  const [currentDate, setCurrentDate] = useState("");
+
   useEffect(() => {
     const savedName = localStorage.getItem("skysync_username");
     if (savedName) setUserName(savedName);
+
+    // Update time block exactly like Meets
+    const updateTime = () => {
+      const now = new Date();
+      setCurrentTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      setCurrentDate(now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }));
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000 * 60);
+    return () => clearInterval(interval);
   }, []);
 
   const handleStartMeetingClick = () => {
@@ -38,9 +51,8 @@ export default function Home() {
     localStorage.setItem("skysync_username", userName.trim());
 
     if (showNameModal === "create") {
-      const newRoomId = Math.random().toString(36).substring(2, 9);
+      const newRoomId = Math.random().toString(36).substring(2, 11).match(/.{1,3}/g)?.join('-') || "abc-def-ghi"; // Like Google Meet
 
-      // Register this user as the creator of this room
       const owned = JSON.parse(localStorage.getItem("skysync_owned_rooms") || "[]");
       if (!owned.includes(newRoomId)) {
         owned.push(newRoomId);
@@ -65,42 +77,18 @@ export default function Home() {
   };
 
   const shareViaWhatsApp = () => {
-    const text = `Join my secure video meeting!\n\nMeeting ID: ${createdRoomId}\nLink: ${window.location.origin}/room/${createdRoomId}`;
+    const text = `Join my secure video meeting!\n\nMeeting URL: ${window.location.origin}/room/${createdRoomId}\nMeeting Code: ${createdRoomId}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
   return (
     <main className={styles.container}>
-      {/* Dynamic Background */}
-      <div className={styles.ambientBackground}>
-        <div className={styles.orb1}></div>
-        <div className={styles.orb2}></div>
-        <div className={styles.orb3}></div>
-      </div>
-
-      {/* Header */}
-      <nav className={styles.navbar}>
-        <div className={styles.logoInfo}>
-          <div className={styles.brandIcon}>
-            <Sparkles size={20} className={styles.iconSparkle} />
-          </div>
-          <span className={styles.logoText}>SkySync</span>
-        </div>
-        <div className={styles.navActions}>
-          <button className={styles.themeToggleBtn} onClick={toggleTheme}>
-            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-          <button className={styles.signInBtn}>Sign In</button>
-        </div>
-      </nav>
-
       {/* Name Modal */}
       {showNameModal && (
         <div className={styles.modalOverlay}>
           <form onSubmit={submitNameAndProceed} className={styles.modalCard}>
             <h2>{showNameModal === "create" ? "Start a Meeting" : "Join Meeting"}</h2>
             <p>Please enter your display name to continue.</p>
-            <label className={styles.inputLabel}>YOUR NAME</label>
             <input
               type="text"
               className={styles.styledInput}
@@ -112,7 +100,7 @@ export default function Home() {
             <div className={styles.modalActionsRow}>
               <button type="button" className={styles.secondaryBtn} onClick={() => setShowNameModal(null)}>Cancel</button>
               <button type="submit" className={styles.primaryBtn} disabled={!userName.trim()}>
-                Continue <ArrowRight size={16} style={{ marginLeft: 8 }} />
+                Continue
               </button>
             </div>
           </form>
@@ -124,100 +112,114 @@ export default function Home() {
         <div className={styles.modalOverlay}>
           <div className={styles.modalCard}>
             <div className={styles.modalHeader}>
-              <h2>Meeting Ready</h2>
-              <p>Share this link with others so they can join.</p>
+              <h2>Here's the link to your meeting</h2>
+              <p>Copy this link and send it to people you want to meet with. Be sure to save it so you can use it later, too.</p>
             </div>
 
-            <div className={styles.idBox}>
-              <span className={styles.idLabel}>Meeting ID</span>
-              <strong className={styles.idValue}>{createdRoomId}</strong>
+            <div className={styles.copyLinkArea}>
+              <span className={styles.linkTextUrl}>{`${window.location.origin}/room/${createdRoomId}`}</span>
+              <button className={styles.copyLinkIconBtn} onClick={copyToClipboard} title="Copy meeting link">
+                <Copy size={20} />
+              </button>
             </div>
 
             <div className={styles.modalActionsCol}>
-              <button className={styles.secondaryBtn} onClick={copyToClipboard}>
-                <Copy size={18} /> Copy Link
-              </button>
               <button className={styles.whatsappBtn} onClick={shareViaWhatsApp}>
                 <Share2 size={18} /> Share via WhatsApp
               </button>
             </div>
 
             <button className={styles.enterBtn} onClick={proceedToRoom}>
-              Enter Room <ArrowRight size={18} style={{ marginLeft: 8 }} />
+              Join now
             </button>
           </div>
         </div>
       )}
 
-      {/* Hero Section */}
-      <section className={styles.heroSection}>
-        <div className={styles.heroContent}>
-          <div className={styles.badgeLabel}>
-            <span className={styles.badgeDot}></span>
-            Next-Gen Communication
+      {/* Header aligned with Meet */}
+      <nav className={styles.header}>
+        <div className={styles.logoInfo}>
+          <div className={styles.brandIcon}>
+            <Sparkles size={20} className={styles.iconSparkle} />
           </div>
-          <h1 className={styles.heroTitle}>Connect Instantly.<br /><span className={styles.gradientText}>Sync Seamlessly.</span></h1>
-          <p className={styles.heroSubtitle}>
-            Experience crystal-clear video calls and instant messaging without limits. Designed for those who value speed, privacy, and aesthetic excellence.
+          <span className={styles.logoText}>SkySync</span>
+        </div>
+        <div className={styles.headerActions}>
+          <div className={styles.dateTimeText}>
+            {currentTime} • {currentDate}
+          </div>
+          <button className={styles.iconButton} onClick={toggleTheme} aria-label="Toggle Theme">
+            {theme === "dark" ? <Sun size={22} /> : <Moon size={22} />}
+          </button>
+        </div>
+      </nav>
+
+      {/* Main Content mimicking Google Meet */}
+      <section className={styles.content}>
+        <div className={styles.leftCol}>
+          <h1 className={styles.mainHeadline}>Premium video meetings.<br />Now available for everyone.</h1>
+          <p className={styles.subHeadline}>
+            We built SkySync for secure and instant communication, making it free and available for all without any limits.
           </p>
 
-          <div className={styles.actionContainer}>
-            <button className={styles.primaryActionBtn} onClick={handleStartMeetingClick}>
-              <Video size={20} /> Start a Meeting
+          <div className={styles.meetActions}>
+            <button className={styles.newMeetingBtn} onClick={handleStartMeetingClick}>
+              <Video size={20} /> New meeting
             </button>
 
-            <div className={styles.joinContainer}>
-              <div className={styles.joinInputWrapper}>
-                <input
-                  type="text"
-                  placeholder="Enter Meeting ID"
-                  className={styles.joinInputNeo}
-                  value={roomId}
-                  onChange={e => setRoomId(e.target.value)}
-                />
-                <button
-                  className={styles.joinBtnNeo}
-                  onClick={handleJoinMeetingClick}
-                  disabled={!roomId.trim()}
-                >
-                  Join
-                </button>
-              </div>
+            <div className={styles.joinInputBox}>
+              <Keyboard size={20} className={styles.inputIcon} />
+              <input
+                type="text"
+                placeholder="Enter a code or link"
+                className={styles.codeInput}
+                value={roomId}
+                onChange={e => setRoomId(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleJoinMeetingClick();
+                }}
+              />
             </div>
+            {roomId.trim() && (
+              <button className={styles.joinTextBtn} onClick={handleJoinMeetingClick}>Join</button>
+            )}
           </div>
-          <div className={styles.trustIndicators}>
-            <span className={styles.trustItem}><Shield size={14} /> End-to-End Encrypted</span>
-            <span className={styles.trustItem}><Zap size={14} /> Low Latency</span>
+          <div className={styles.separatorLine}></div>
+          <div className={styles.learnMore}>
+            <a href="#">Learn more</a> about SkySync.
           </div>
         </div>
 
-        <div className={styles.heroVisual}>
-          <div className={styles.glassMockup}>
-            <div className={styles.mockupHeader}>
-              <div className={styles.mockupDots}><span></span><span></span><span></span></div>
-              <div className={styles.mockupTitle}>SkySync Room</div>
-            </div>
-            <div className={styles.mockupBody}>
-              <div className={styles.avatarGrid}>
-                <div className={styles.avatarMain}>
-                  <div className={styles.ripple}></div>
-                  <Video size={48} className={styles.avatarIcon} />
-                </div>
-                <div className={styles.avatarSideContainer}>
-                  <div className={styles.avatarSmall}></div>
-                  <div className={styles.avatarSmall}></div>
-                  <div className={styles.avatarSmall}></div>
+        {/* Right column stylized Meet Carousel */}
+        <div className={styles.rightCol}>
+          <div className={styles.carouselVisual}>
+            <div className={styles.carouselCircle1}></div>
+            <div className={styles.carouselCircle2}></div>
+            <div className={styles.carouselGraphic}>
+              <div className={styles.glassMockCard}>
+                <Sparkles size={40} className={styles.mockupIcon} />
+                <div className={styles.mockupLines}>
+                  <div className={styles.mockLineLong}></div>
+                  <div className={styles.mockLineShort}></div>
                 </div>
               </div>
+              <div className={styles.glassMockCardOverlay}>
+                <Video size={30} className={styles.mockupIconSmall} />
+              </div>
             </div>
+          </div>
+
+          <div className={styles.carouselText}>
+            <h3>Get a link you can share</h3>
+            <p>Click <strong>New meeting</strong> to get a link you can send to people you want to meet with</p>
+          </div>
+          <div className={styles.carouselDots}>
+            <span className={styles.dotActive}></span>
+            <span className={styles.dot}></span>
+            <span className={styles.dot}></span>
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className={styles.footer}>
-        <p>&copy; {new Date().getFullYear()} SkySync. All rights reserved.</p>
-      </footer>
     </main>
   );
 }
