@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Video, Sparkles, ArrowRight, Copy, Share2, PlayCircle, Shield, Zap, MonitorUp } from "lucide-react";
+import { Video, Sparkles, ArrowRight, Copy, Share2, PlayCircle, Shield, Zap, MonitorUp, Sun, Moon } from "lucide-react";
 import styles from "./page.module.css";
 import { useTheme } from "@/context/ThemeContext";
 
 export default function Home() {
   const router = useRouter();
-  const { theme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
 
   const [userName, setUserName] = useState("");
   const [roomId, setRoomId] = useState("");
@@ -18,7 +18,7 @@ export default function Home() {
   const [createdRoomId, setCreatedRoomId] = useState("");
 
   useEffect(() => {
-    const savedName = localStorage.getItem("syncmeet_username");
+    const savedName = localStorage.getItem("skysync_username");
     if (savedName) setUserName(savedName);
   }, []);
 
@@ -35,16 +35,16 @@ export default function Home() {
     e.preventDefault();
     if (!userName.trim()) return;
 
-    localStorage.setItem("syncmeet_username", userName.trim());
+    localStorage.setItem("skysync_username", userName.trim());
 
     if (showNameModal === "create") {
       const newRoomId = Math.random().toString(36).substring(2, 9);
 
       // Register this user as the creator of this room
-      const owned = JSON.parse(localStorage.getItem("syncmeet_owned_rooms") || "[]");
+      const owned = JSON.parse(localStorage.getItem("skysync_owned_rooms") || "[]");
       if (!owned.includes(newRoomId)) {
         owned.push(newRoomId);
-        localStorage.setItem("syncmeet_owned_rooms", JSON.stringify(owned));
+        localStorage.setItem("skysync_owned_rooms", JSON.stringify(owned));
       }
 
       setCreatedRoomId(newRoomId);
@@ -65,29 +65,31 @@ export default function Home() {
   };
 
   const shareViaWhatsApp = () => {
-    // Removed name from message as requested
     const text = `Join my secure video meeting!\n\nMeeting ID: ${createdRoomId}\nLink: ${window.location.origin}/room/${createdRoomId}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
   return (
     <main className={styles.container}>
+      {/* Dynamic Background */}
+      <div className={styles.ambientBackground}>
+        <div className={styles.orb1}></div>
+        <div className={styles.orb2}></div>
+        <div className={styles.orb3}></div>
+      </div>
+
       {/* Header */}
       <nav className={styles.navbar}>
         <div className={styles.logoInfo}>
-          <div className={styles.logoCircles}>
-            <div className={styles.circleBack}></div>
-            <div className={styles.circleFront}></div>
+          <div className={styles.brandIcon}>
+            <Sparkles size={20} className={styles.iconSparkle} />
           </div>
-          <span className={styles.logoText}>SyncMeet</span>
-        </div>
-        <div className={styles.navLinks}>
-          <a href="#">Home</a>
-          <a href="#features">Features</a>
-          <a href="#">Pricing</a>
-          <a href="#">Blog</a>
+          <span className={styles.logoText}>SkySync</span>
         </div>
         <div className={styles.navActions}>
+          <button className={styles.themeToggleBtn} onClick={toggleTheme}>
+            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
           <button className={styles.signInBtn}>Sign In</button>
         </div>
       </nav>
@@ -95,7 +97,7 @@ export default function Home() {
       {/* Name Modal */}
       {showNameModal && (
         <div className={styles.modalOverlay}>
-          <form onSubmit={submitNameAndProceed} className={`glass-panel ${styles.modalCard}`}>
+          <form onSubmit={submitNameAndProceed} className={styles.modalCard}>
             <h2>{showNameModal === "create" ? "Start a Meeting" : "Join Meeting"}</h2>
             <p>Please enter your display name to continue.</p>
             <label className={styles.inputLabel}>YOUR NAME</label>
@@ -108,8 +110,8 @@ export default function Home() {
               autoFocus
             />
             <div className={styles.modalActionsRow}>
-              <button type="button" className={`btn ${styles.secondaryBtn}`} onClick={() => setShowNameModal(null)}>Cancel</button>
-              <button type="submit" className={`btn btn-primary ${styles.primaryBtn}`} disabled={!userName.trim()}>
+              <button type="button" className={styles.secondaryBtn} onClick={() => setShowNameModal(null)}>Cancel</button>
+              <button type="submit" className={styles.primaryBtn} disabled={!userName.trim()}>
                 Continue <ArrowRight size={16} style={{ marginLeft: 8 }} />
               </button>
             </div>
@@ -120,7 +122,7 @@ export default function Home() {
       {/* Share Modal Interstitial */}
       {showShareModal && (
         <div className={styles.modalOverlay}>
-          <div className={`glass-panel ${styles.modalCard}`}>
+          <div className={styles.modalCard}>
             <div className={styles.modalHeader}>
               <h2>Meeting Ready</h2>
               <p>Share this link with others so they can join.</p>
@@ -132,15 +134,15 @@ export default function Home() {
             </div>
 
             <div className={styles.modalActionsCol}>
-              <button className={`btn ${styles.secondaryBtn}`} onClick={copyToClipboard}>
+              <button className={styles.secondaryBtn} onClick={copyToClipboard}>
                 <Copy size={18} /> Copy Link
               </button>
-              <button className={`btn ${styles.whatsappBtn}`} onClick={shareViaWhatsApp}>
+              <button className={styles.whatsappBtn} onClick={shareViaWhatsApp}>
                 <Share2 size={18} /> Share via WhatsApp
               </button>
             </div>
 
-            <button className={`btn btn-primary ${styles.enterBtn}`} onClick={proceedToRoom}>
+            <button className={styles.enterBtn} onClick={proceedToRoom}>
               Enter Room <ArrowRight size={18} style={{ marginLeft: 8 }} />
             </button>
           </div>
@@ -149,91 +151,73 @@ export default function Home() {
 
       {/* Hero Section */}
       <section className={styles.heroSection}>
-        {/* Background Glows */}
-        <div className={styles.glowLeft}></div>
-        <div className={styles.glowRight}></div>
-
         <div className={styles.heroContent}>
-          <h1 className={styles.heroTitle}>Connect Instantly.<br />Sync Seamlessly.</h1>
+          <div className={styles.badgeLabel}>
+            <span className={styles.badgeDot}></span>
+            Next-Gen Communication
+          </div>
+          <h1 className={styles.heroTitle}>Connect Instantly.<br /><span className={styles.gradientText}>Sync Seamlessly.</span></h1>
           <p className={styles.heroSubtitle}>
-            Experience crystal-clear video calls and instant messaging, all in one place. Stay in sync, anytime, anywhere.
+            Experience crystal-clear video calls and instant messaging without limits. Designed for those who value speed, privacy, and aesthetic excellence.
           </p>
 
-          <div className={styles.heroActionRow}>
-            <button className={styles.startMeetingBtn} onClick={handleStartMeetingClick}>
-              Start Meeting
+          <div className={styles.actionContainer}>
+            <button className={styles.primaryActionBtn} onClick={handleStartMeetingClick}>
+              <Video size={20} /> Start a Meeting
             </button>
-            <button className={styles.watchDemoBtn}>
-              <PlayCircle size={20} /> Watch Demo
-            </button>
-          </div>
 
-          <div className={styles.joinBox}>
-            <span className={styles.joinText}>Or join an existing meeting:</span>
-            <div className={styles.joinInputWrapper}>
-              <input
-                type="text"
-                placeholder="Enter Meeting ID"
-                className={styles.joinInput}
-                value={roomId}
-                onChange={e => setRoomId(e.target.value)}
-              />
-              <button
-                className={styles.joinBtn}
-                onClick={handleJoinMeetingClick}
-                disabled={!roomId.trim()}
-              >
-                Join
-              </button>
+            <div className={styles.joinContainer}>
+              <div className={styles.joinInputWrapper}>
+                <input
+                  type="text"
+                  placeholder="Enter Meeting ID"
+                  className={styles.joinInputNeo}
+                  value={roomId}
+                  onChange={e => setRoomId(e.target.value)}
+                />
+                <button
+                  className={styles.joinBtnNeo}
+                  onClick={handleJoinMeetingClick}
+                  disabled={!roomId.trim()}
+                >
+                  Join
+                </button>
+              </div>
             </div>
+          </div>
+          <div className={styles.trustIndicators}>
+            <span className={styles.trustItem}><Shield size={14} /> End-to-End Encrypted</span>
+            <span className={styles.trustItem}><Zap size={14} /> Low Latency</span>
           </div>
         </div>
 
         <div className={styles.heroVisual}>
-          {/* Decorative Window Mockup matching the vibe */}
-          <div className={styles.mockupWindow}>
+          <div className={styles.glassMockup}>
             <div className={styles.mockupHeader}>
-              <div className={styles.dots}><span></span><span></span><span></span></div>
-              <div className={styles.mockupTitle}>SyncMeet Room</div>
+              <div className={styles.mockupDots}><span></span><span></span><span></span></div>
+              <div className={styles.mockupTitle}>SkySync Room</div>
             </div>
             <div className={styles.mockupBody}>
-              <div className={styles.mockupGrid}>
-                <div className={styles.mockupVideo}></div>
-                <div className={styles.mockupVideo}></div>
-                <div className={styles.mockupVideo}></div>
-                <div className={styles.mockupVideo}></div>
+              <div className={styles.avatarGrid}>
+                <div className={styles.avatarMain}>
+                  <div className={styles.ripple}></div>
+                  <Video size={48} className={styles.avatarIcon} />
+                </div>
+                <div className={styles.avatarSideContainer}>
+                  <div className={styles.avatarSmall}></div>
+                  <div className={styles.avatarSmall}></div>
+                  <div className={styles.avatarSmall}></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className={styles.featuresSection}>
-        <h2 className={styles.sectionTitle}>Your All-In-One Video & Messaging App</h2>
-        <div className={styles.featuresGrid}>
-          <div className={styles.featureCard}>
-            <div className={styles.featureIcon} style={{ background: '#4f46e5' }}><Video size={24} color="white" /></div>
-            <h3>HD Video</h3>
-            <p>Experience sharp, clear video calls. See every detail with high-quality.</p>
-          </div>
-          <div className={styles.featureCard}>
-            <div className={styles.featureIcon} style={{ background: '#8b5cf6' }}><Zap size={24} color="white" /></div>
-            <h3>Real-Time Messaging</h3>
-            <p>Instantly chat with participants during calls. Share links and thoughts seamlessly.</p>
-          </div>
-          <div className={styles.featureCard}>
-            <div className={styles.featureIcon} style={{ background: '#0ea5e9' }}><MonitorUp size={24} color="white" /></div>
-            <h3>Screen Sharing</h3>
-            <p>Effortlessly share your screen with a click. Perfect for presentations and collaboration.</p>
-          </div>
-          <div className={styles.featureCard}>
-            <div className={styles.featureIcon} style={{ background: '#3b82f6' }}><Shield size={24} color="white" /></div>
-            <h3>Secure & Private</h3>
-            <p>Your conversations are peer-to-peer encrypted and secure. Privacy is our priority.</p>
-          </div>
-        </div>
-      </section>
+      {/* Footer */}
+      <footer className={styles.footer}>
+        <p>&copy; {new Date().getFullYear()} SkySync. All rights reserved.</p>
+      </footer>
     </main>
   );
 }

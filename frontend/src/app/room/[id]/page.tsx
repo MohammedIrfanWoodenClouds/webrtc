@@ -33,7 +33,7 @@ export default function Room() {
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
     useEffect(() => {
-        const name = localStorage.getItem("syncmeet_username");
+        const name = localStorage.getItem("skysync_username");
         if (!name) {
             setNeedsName(true);
         } else {
@@ -44,7 +44,7 @@ export default function Room() {
     const handleNameSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (namePrompt.trim()) {
-            localStorage.setItem("syncmeet_username", namePrompt.trim());
+            localStorage.setItem("skysync_username", namePrompt.trim());
             setUserName(namePrompt.trim());
             setNeedsName(false);
         }
@@ -200,7 +200,7 @@ export default function Room() {
                         <div style={{ position: 'absolute', width: 20, height: 20, borderRadius: '50%', background: '#3b82f6', top: 0, right: 0 }}></div>
                         <div style={{ position: 'absolute', width: 20, height: 20, borderRadius: '50%', background: '#8b5cf6', bottom: 0, left: 0, mixBlendMode: 'screen' }}></div>
                     </div>
-                    <h2>SyncMeet</h2>
+                    <h2>SkySync</h2>
                 </div>
 
                 <div className={styles.headerActions}>

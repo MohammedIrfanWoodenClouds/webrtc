@@ -131,7 +131,7 @@ export function useWebRTC(roomId: string, userName: string) {
 
                 // -- WAITING ROOM LOGIC START --
                 socketRef.current.on("connect", () => {
-                    const owned = JSON.parse(localStorage.getItem("syncmeet_owned_rooms") || "[]");
+                    const owned = JSON.parse(localStorage.getItem("skysync_owned_rooms") || "[]");
                     const isClaimingHost = owned.includes(roomId);
 
                     // Instead of joining immediately, request to join with host token
