@@ -1,5 +1,5 @@
 import { Server, Socket } from 'socket.io';
-import Message from '../models/Message';
+import Message from './models/Message';
 
 export const setupSockets = (io: Server) => {
     io.on('connection', (socket: Socket) => {
