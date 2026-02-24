@@ -43,6 +43,22 @@ export const setupSockets = (io: Server) => {
             socket.to(roomId).emit('user_left_meeting', socket.id);
         });
 
+        // --- Meeting Chat ---
+        socket.on('join_meeting_chat', (roomId: string) => {
+            // Reusing the same WebRTC roomId for messaging scope
+            socket.join(`chat_${roomId}`);
+        });
+
+        socket.on('send_meeting_message', (data: { roomId: string, senderId: string, senderName: string, text: string }) => {
+            // We just emit it live; we don't save ephemeral in-call messages to DB to mimic simple Google Meet chat
+            io.to(`chat_${data.roomId}`).emit('new_meeting_message', {
+                senderId: data.senderId,
+                senderName: data.senderName,
+                text: data.text,
+                timestamp: new Date().toISOString()
+            });
+        });
+
         socket.on('disconnect', () => {
             console.log(`User disconnected: ${socket.id}`);
             // Notify all rooms the user was in
