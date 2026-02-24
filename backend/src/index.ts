@@ -17,9 +17,10 @@ const app = express();
 app.use(express.json());
 app.use(cors({ origin: true, credentials: true })); // Allow all origins
 
-app.use('/api/auth', authRoutes);
+app.get('/health', (req, res) => res.status(200).send('OK'));
+app.get('/', (req, res) => res.status(200).send('SkySync Backend Online'));
 
-app.get('/', (req, res) => res.send('SkySync Backend Online'));
+app.use('/api/auth', authRoutes);
 
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
